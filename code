@@ -1,0 +1,34 @@
+import hashlib
+
+def crack_md5_hash(md5_hash, wordlist):
+    """
+    Attempts to find the original string for the given MD5 hash from the wordlist.
+
+    Parameters:
+        md5_hash (str): The MD5 hash to crack.
+        wordlist (list): A list of possible plaintext strings.
+
+    Returns:
+        str: The original string if found, else None.
+    """
+    for word in wordlist:
+        # Encode the word and generate its MD5 hash
+        encoded_word = word.encode('utf-8')
+        hashed_word = hashlib.md5(encoded_word).hexdigest()
+
+        # Compare hashes
+        if hashed_word == md5_hash:
+            return word  # Match found
+    return None  # No match found
+
+
+# Example usage
+if __name__ == "__main__":
+    md5_hash = "5d41402abc4b2a76b9719d911017c592"  # Hash of "hello"
+    wordlist = ["hello", "world", "test", "password"]
+
+    result = crack_md5_hash(md5_hash, wordlist)
+    if result:
+        print(f"Match found! The original string is: {result}")
+    else:
+        print("No match found.")
