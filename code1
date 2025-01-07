@@ -1,0 +1,36 @@
+import hashlib
+import itertools
+
+def brute_force_md5(md5_hash, charset, max_length):
+    """
+    Brute-forces the given MD5 hash using the provided character set and max length.
+    
+    Parameters:
+        md5_hash (str): The MD5 hash to crack.
+        charset (str): The characters to use for brute force.
+        max_length (int): The maximum length of the plaintext.
+    
+    Returns:
+        str: The original string if found, else None.
+    """
+    for length in range(1, max_length + 1):
+        for attempt in itertools.product(charset, repeat=length):
+            attempt_string = ''.join(attempt)
+            hashed_attempt = hashlib.md5(attempt_string.encode('utf-8')).hexdigest()
+            
+            if hashed_attempt == md5_hash:
+                return attempt_string
+    return None
+
+
+# Example usage
+if __name__ == "__main__":
+    md5_hash = "5d41402abc4b2a76b9719d911017c592"  # Hash of "hello"
+    charset = "abcdefghijklmnopqrstuvwxyz"  # Characters to use
+    max_length = 5  # Maximum length of plaintext
+
+    result = brute_force_md5(md5_hash, charset, max_length)
+    if result:
+        print(f"Match found! The original string is: {result}")
+    else:
+        print("No match found.")
