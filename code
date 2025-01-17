@@ -1,33 +1,100 @@
 import hashlib
+import requests
+import os
 
-def crack_md5_hash(md5_hash, wordlist):
+def download_wordlist(url, filename):
     """
-    Attempts to find the original string for the given MD5 hash from the wordlist.
+    Downloads the wordlist from the specified URL and saves it to the given filename.
 
     Parameters:
-        md5_hash (str): The MD5 hash to crack.
+        url (str): The URL of the wordlist.
+        filename (str): The local filename to save the wordlist.
+
+    Returns:
+        str: The path to the saved wordlist.
+    """
+    response = requests.get(url)
+    response.raise_for_status()  # Check for HTTP request errors
+
+    with open(filename, 'wb') as file:
+        file.write(response.content)
+
+    return filename
+
+def load_wordlist(filename):
+    """
+    Loads the wordlist from a file.
+
+    Parameters:
+        filename (str): The path to the wordlist file.
+
+    Returns:
+        list: A list of words from the wordlist.
+    """
+    with open(filename, 'r', encoding='latin-1') as file:
+        wordlist = file.read().splitlines()
+
+    return wordlist
+
+def crack_hash(hash_to_crack, wordlist, hash_type='md5'):
+    """
+    Attempts to find the original string for the given hash from the wordlist.
+
+    Parameters:
+        hash_to_crack (str): The hash to crack.
         wordlist (list): A list of possible plaintext strings.
+        hash_type (str): The type of hash ('md5', 'sha1', 'sha256', 'sha512').
 
     Returns:
         str: The original string if found, else None.
     """
     for word in wordlist:
-        # Encode the word and generate its MD5 hash
+        # Encode the word
         encoded_word = word.encode('utf-8')
-        hashed_word = hashlib.md5(encoded_word).hexdigest()
+        
+        # Generate the hash based on the specified type
+        if hash_type == 'md5':
+            hashed_word = hashlib.md5(encoded_word).hexdigest()
+        elif hash_type == 'sha1':
+            hashed_word = hashlib.sha1(encoded_word).hexdigest()
+        elif hash_type == 'sha256':
+            hashed_word = hashlib.sha256(encoded_word).hexdigest()
+        elif hash_type == 'sha512':
+            hashed_word = hashlib.sha512(encoded_word).hexdigest()
+        else:
+            raise ValueError("Unsupported hash type. Use 'md5', 'sha1', 'sha256', or 'sha512'.")
 
         # Compare hashes
-        if hashed_word == md5_hash:
+        if hashed_word == hash_to_crack:
             return word  # Match found
     return None  # No match found
-
 
 # Example usage
 if __name__ == "__main__":
     md5_hash = "5d41402abc4b2a76b9719d911017c592"  # Hash of "hello"
-    wordlist = ["hello", "world", "test", "password"]
+    
+    # Download and load the RockYou wordlist
+    wordlist_url = "https://github.com/danielmiessler/SecLists/raw/master/Passwords/Leaked-Databases/rockyou.txt.tar.gz"
+    wordlist_filename = "rockyou.txt.tar.gz"
+    extracted_filename = "rockyou.txt"
 
-    result = crack_md5_hash(md5_hash, wordlist)
+    # Download the compressed wordlist
+    if not os.path.exists(wordlist_filename):
+        print(f"Downloading {wordlist_filename}...")
+        download_wordlist(wordlist_url, wordlist_filename)
+
+    # Extract the wordlist if not already done
+    if not os.path.exists(extracted_filename):
+        import tarfile
+        print(f"Extracting {wordlist_filename}...")
+        with tarfile.open(wordlist_filename, "r:gz") as tar:
+            tar.extractall()
+
+    # Load the wordlist
+    wordlist = load_wordlist(extracted_filename)
+
+    # Try cracking the hash
+    result = crack_hash(md5_hash, wordlist, hash_type='md5')
     if result:
         print(f"Match found! The original string is: {result}")
     else:
